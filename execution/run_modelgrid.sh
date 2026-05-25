@@ -29,6 +29,7 @@ star_period=7
 
 # Example for a function that will create the grid files for an individual model and then will run mcfost on it. The function is called during the loops below. It will also generate a log file for the mcfost run.
 # As it is written, I don't think this shell script needs to be in a specific place to run, but you may have to experiment. The paths for the files and for mcfost are specific and need to be adjusted for your PC.
+# Refer to the test_wind.py script to understand the parameters to call the function. 
 Create_files6(){
 
 
@@ -43,7 +44,9 @@ wait
 }
 
 # This is an example for a variant function which will "regrid" an existing model fits without recomputing the non-LTE population files. This is useful if you want to recompute the image for different inclinations, azimuths etc, for which the population does not change. 
-
+# Note that this is assuming you use one model file per inclination, which is what we did for technical reasons. You can also include multiple inclinations in a single model fits from the start, then you will likely not need this.
+# test_wind_aztest.py is just a slightly modified version of the regular script which computes a grid with more than one azimuthal point. It also keeps the secondary columns from the magnetspheric accretion region. 
+# You could fold that into the regular test_wind.py easily, I was just lazy and needed something quick.
 Create_files7(){
 
 cd $file_dir 
@@ -58,12 +61,17 @@ test_wind_aztest.py $1 -acc -rmi $r_mag_in -rmo $r_mag_width -tmag $magtemp -m $
 cp $model_dir/H.fits.gz ./
 cp $model_dir/ne.fits.gz ./
 wait
-sed -i 's|0			#initial solution, 0 LTE, 1 old pops|1			#initial solution, 0 LTE, 1 old pops|' $1.para
+sed -i 's|0			#initial solution, 0 LTE, 1 old pops|1			#initial solution, 0 LTE, 1 old pops|' $1.para 
 wait  
+# The idea is that you will copy the H.fits.gz and ne.fits.gz from your reference model to the folder where you save the new model and then replace the "initial solution" line in the model para file so that it uses the existing population files.
 /home/awo/mcfost/src/./mcfost $1.para +disk_struct -atom -sphere_mesh $1.s -iterate_ne 1 -Nrays_mc_step 1000 | tee $1+Processing24Cores.txt
 
 }
 
+
+
+# This is an example for the way I automated the computation of many model files. The loop will define a queue of function calls at different parameters. In the first example below, only the stellar mass ("star_mass") has more than one parameter value.
+# So this loop would compute 2 models, one at 0.6 M_sol and one at 1.2 M_sol with the other parameters as defined below. The units you may have to parse from the test_wind.py where not obvious. Usually it is what you would expect. I think zc (the vertical cutoff of the wind) is in au.
 for fp in 15;
 do
 for dark_disk_radius in 14.5;
@@ -88,8 +96,10 @@ do
                         do
                             for wbeta in 0.62;  
                             do
-                            r_wind_i=$(echo "$r_mag_in + $r_mag_width + $constant" | bc -l)
+                            r_wind_i=$(echo "$r_mag_in + $r_mag_width + $constant" | bc -l) # This is to tie the inner radius of the wind to the outer radius of the magnetosphere dynamically, so that you dont create overlap of you forget to change one of them.
                             Create_files6 MAG+RLC+TM$magtemp+RMI$r_mag_in+RMO$r_mag_width+MD$macc+Inc$inc+RI$r_wind_i+RO$r_wind_width+WA$walpha+WB$wbeta+ZC$zc+ML$mloss+FP$fp+DDR$dark_disk_radius+OB$obliq+RS$star_radius+MS$star_mass+TS$star_temp+PS$star_period 
+                            # Note that this is where the file name convention is defined. All the model parameters are passed to the file/directory name in order to see what model is what at a glance. I do not recall that I had issues with the filename length at any point, but
+                            # if you do you could also switch to a running index to designate the model file and then try to store the info in the fits header somehow or just as a txt file inside the folder.
                             done
                         done
                     done
@@ -103,7 +113,8 @@ done
 done
 done
 
-
+# Multiple loops in sequence are for when you want to vary a single parameter from a reference model at a time rather than do a full multidimensional grid. In the examples below, we use the same reference point, but vary the stellar period by two steps. 
+# After that the stellar radius, then the temperature. So in total you would compute 8 models rather than 3^4.
 for fp in 15;
 do
 for dark_disk_radius in 14.5;

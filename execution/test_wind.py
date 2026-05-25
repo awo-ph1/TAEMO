@@ -16,7 +16,7 @@ import argparse
 import matplotlib.pyplot as plt
 import matplotlib
 
-
+# Below is the complete list of arguments you may pass to the script to vary parameters of the model. I will not commment each in detail, most should either be self explanatory or follow from the descriptions in my thesis / second paper
 parser=argparse.ArgumentParser(description="Write Job files for mcfost",prog="BrG Wind/Magnetosphere RT File Writer",epilog="End")
 parser.add_argument("filename")
 parser.add_argument("-m","--macc",help="Stellar mass accretion rate in Msol/yr",required=False,default=1E-6)
@@ -45,9 +45,9 @@ parser.add_argument("-fov","--fieldofview",help="Field of view in Rstar",require
 parser.add_argument("-pxs","--pixelsize",help="Size in Rstar of the individual pixel",required=False,default=0.03)
 parser.add_argument("-ddr","--darkdiskradius",help="Dark disk radius",required=False,default=4)
 parser.add_argument("-dd","--darkdisk",help="Add an optically thick midplane.",required=False,action="store_true")
-parser.add_argument("-lte","--onlylte",help="LTE Calculations only",required=False,action="store_false")
-parser.add_argument("-wt","--wind_transp",help="Wind Transparency",required=False,action="store_true")
-parser.add_argument("-at","--acc_transp",help="Accretion Column Transparency",required=False,action="store_true")
+parser.add_argument("-lte","--onlylte",help="LTE Calculations only",required=False,action="store_false") #if you want to compute an image without computing the non-equilibrium atomic populations. See my comment regarding regrid-ing in the run_modelgrid.sh
+parser.add_argument("-wt","--wind_transp",help="Wind Transparency",required=False,action="store_true") # to turn the wind region on or off
+parser.add_argument("-at","--acc_transp",help="Accretion Column Transparency",required=False,action="store_true") # to turn the magnetospheric accretion region on or off
 parser.add_argument("-az","--azimuth",help="Azimuth angle on a 3D grid",required=False,default=-90)
 parser.add_argument("-ms","--mstar",help="Stellar Mass",required=False,default=0.8)
 parser.add_argument("-rs","--rstar",help="Stellar Radius",required=False,default=2.5)
@@ -98,7 +98,7 @@ wind_temperature=float(cl_args.windtmax)
 
 
 is_bb = True
-
+# Before I added the stellar parameters to the arguments, they were defined statically here. You should leave it to custom and then pass them to the script from the run_modelgrid.sh now. The others don't do anything anymore I think but I leave them in just in case.
 if stellar_object=="RU Lup":
 	Mstar = 0.8 #0.6
 	Rstar = 2.5 #2.6
@@ -127,7 +127,7 @@ if stellar_object=="Custom":
 
 
 
-
+# I think this was only for running the models on the dahu cluster at IPAG, which we did initially but later I ran them on my own computer in Cologne. Probably not needed, but again I'm not deleting anything now.
 job_description=(filename + ", stellar mass = "+str(Mstar)+" Msol"+", stellar radius = "+ str(Rstar)+" Rsol"+ ", eff. Temp = "+ str(Tstar) +" K"
 + ", rotational period ="+ str(Prot)+ " days" + ", accretion rate = "+str(Mdot)+" Msol/yr || " )
 if acc:
@@ -166,7 +166,7 @@ star = ctts_env.Star(Rstar,Mstar,Tstar,Prot,3000)
 Tring = 0.0; T_preshock = 0.
 #beta_ma=0
 ## grid ##
-Nr = 150; Nt = 150; Np = (64,1)[beta_ma == 0]
+Nr = 150; Nt = 150; Np = (64,1)[beta_ma == 0] #This part is changed in the test_wind_aztest.py
 
 #wind_radius_inner=rmi*1.1
 #wind_radius_outer=5
